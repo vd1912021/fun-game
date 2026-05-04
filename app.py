@@ -13,6 +13,7 @@ st.markdown("""
     .incorrect { color: #dc3545; font-weight: bold; }
     .surprise-box { background: #fff3cd; padding: 2em; border-radius: 10px; text-align: center; margin: 2em 0; }
     .celebration { text-align: center; font-size: 3em; margin: 1em 0; }
+    .love-you { text-align: center; color: #f43f5e; font-size: 3em; margin: 2em 0; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -26,49 +27,169 @@ if 'show_results' not in st.session_state:
 if 'show_surprise' not in st.session_state:
     st.session_state.show_surprise = False
 
-# Quiz Questions (30 total - 5 per stage)
+# Quiz Questions with MCQ options (30 total - 5 per stage)
 questions = [
     # Stage 1
-    {"q": "What's her go-to comfort food when she's sad?", "ans": "Chocolates"},
-    {"q": "Which movie/show has she watched the most times?", "ans": "Saiyara"},
-    {"q": "What does she do first thing in the morning?", "ans": "Morning Prayer"},
-    {"q": "Her most used emoji?", "ans": "Laughing"},
-    {"q": "What's her favorite way to spend time with family?", "ans": "Gossiping"},
+    {
+        "q": "What's her go-to comfort food when she's sad?",
+        "options": ["Chocolates", "Ice Cream", "Pizza", "Cake"],
+        "ans": "Chocolates"
+    },
+    {
+        "q": "Which movie/show has she watched the most times?",
+        "options": ["Saiyara", "Darlings", "Badhaai Do", "Queen"],
+        "ans": "Saiyara"
+    },
+    {
+        "q": "What does she do first thing in the morning?",
+        "options": ["Morning Prayer", "Check Phone", "Drink Water", "Exercise"],
+        "ans": "Morning Prayer"
+    },
+    {
+        "q": "Her most used emoji?",
+        "options": ["Laughing", "Heart", "Thinking", "Wink"],
+        "ans": "Laughing"
+    },
+    {
+        "q": "What's her favorite way to spend time with family?",
+        "options": ["Gossiping", "Cooking", "Movies", "Shopping"],
+        "ans": "Gossiping"
+    },
     
     # Stage 2
-    {"q": "What's her dream job/career?", "ans": "Financial Analyst"},
-    {"q": "Which celebrity does she have a crush on?", "ans": "Abhishek Sharma"},
-    {"q": "What's her biggest insecurity?", "ans": "Weight"},
-    {"q": "What does she spend most time on her phone doing?", "ans": "Scrolling"},
-    {"q": "Her favorite thing about herself?", "ans": "Knowledge"},
+    {
+        "q": "What's her dream job/career?",
+        "options": ["Financial Analyst", "Doctor", "Teacher", "Engineer"],
+        "ans": "Financial Analyst"
+    },
+    {
+        "q": "Which celebrity does she have a crush on?",
+        "options": ["Abhishek Sharma", "Ranbir Kapoor", "Aditya Roy Kapur", "Hrithik Roshan"],
+        "ans": "Abhishek Sharma"
+    },
+    {
+        "q": "What's her biggest insecurity?",
+        "options": ["Weight", "Appearance", "Intelligence", "Social Skills"],
+        "ans": "Weight"
+    },
+    {
+        "q": "What does she spend most time on her phone doing?",
+        "options": ["Scrolling", "Gaming", "Chatting", "Watching Videos"],
+        "ans": "Scrolling"
+    },
+    {
+        "q": "Her favorite thing about herself?",
+        "options": ["Knowledge", "Humor", "Kindness", "Creativity"],
+        "ans": "Knowledge"
+    },
     
     # Stage 3
-    {"q": "What was her childhood dream?", "ans": "Travel"},
-    {"q": "Her favorite memory with you?", "ans": "Noida"},
-    {"q": "What makes her cry (emotionally)?", "ans": "Subjective"},
-    {"q": "Her most embarrassing habit?", "ans": "Burp"},
-    {"q": "What's one thing she always nags you about?", "ans": "Cleanliness"},
+    {
+        "q": "What was her childhood dream?",
+        "options": ["Travel", "Become a Doctor", "Write a Book", "Become a Singer"],
+        "ans": "Travel"
+    },
+    {
+        "q": "Her favorite memory with you?",
+        "options": ["Noida", "First Date", "First Kiss", "Vacation"],
+        "ans": "Noida"
+    },
+    {
+        "q": "What makes her cry (emotionally)?",
+        "options": ["Sad Movies", "Emotional Moments", "Family Issues", "Subjective"],
+        "ans": "Subjective"
+    },
+    {
+        "q": "Her most embarrassing habit?",
+        "options": ["Burp", "Snoring", "Talking to Self", "Laughing Loudly"],
+        "ans": "Burp"
+    },
+    {
+        "q": "What's one thing she always nags you about?",
+        "options": ["Cleanliness", "Time Management", "Money Spending", "Phone Usage"],
+        "ans": "Cleanliness"
+    },
     
     # Stage 4
-    {"q": "What's the first thing she noticed about you?", "ans": "Nothing"},
-    {"q": "Her biggest relationship fear?", "ans": "Breakup"},
-    {"q": "What song reminds her of you?", "ans": "Sang Rahiyo"},
-    {"q": "Her secret talent nobody knows?", "ans": "Subjective"},
-    {"q": "What's her love language?", "ans": "Physical and Emotional"},
+    {
+        "q": "What's the first thing she noticed about you?",
+        "options": ["Nothing", "Smile", "Eyes", "Personality"],
+        "ans": "Nothing"
+    },
+    {
+        "q": "Her biggest relationship fear?",
+        "options": ["Breakup", "Cheating", "Distance", "Misunderstanding"],
+        "ans": "Breakup"
+    },
+    {
+        "q": "What song reminds her of you?",
+        "options": ["Sang Rahiyo", "Tum Hi Ho", "Aashiquui", "Agar Tum Saath Ho"],
+        "ans": "Sang Rahiyo"
+    },
+    {
+        "q": "Her secret talent nobody knows?",
+        "options": ["Dancing", "Singing", "Drawing", "Subjective"],
+        "ans": "Subjective"
+    },
+    {
+        "q": "What's her love language?",
+        "options": ["Physical and Emotional", "Words of Affirmation", "Quality Time", "Gifts"],
+        "ans": "Physical and Emotional"
+    },
     
     # Stage 5
-    {"q": "What did she say the first time she realized she loved you?", "ans": "Nothing"},
-    {"q": "Her biggest dream for your future together?", "ans": "House, Car, Travel and Money"},
-    {"q": "What's the sweetest thing you've done for her?", "ans": "Caring Me"},
-    {"q": "Her favorite nickname for you?", "ans": "V"},
-    {"q": "What does she value most in your relationship?", "ans": "Love"},
+    {
+        "q": "What did she say the first time she realized she loved you?",
+        "options": ["Nothing", "I Love You", "You Mean Everything", "Forever"],
+        "ans": "Nothing"
+    },
+    {
+        "q": "Her biggest dream for your future together?",
+        "options": ["House, Car, Travel and Money", "Just Be Together", "Get Married", "Have Kids"],
+        "ans": "House, Car, Travel and Money"
+    },
+    {
+        "q": "What's the sweetest thing you've done for her?",
+        "options": ["Caring Me", "Surprise Gift", "Special Date", "Love Letter"],
+        "ans": "Caring Me"
+    },
+    {
+        "q": "Her favorite nickname for you?",
+        "options": ["V", "Baby", "Jaan", "Love"],
+        "ans": "V"
+    },
+    {
+        "q": "What does she value most in your relationship?",
+        "options": ["Love", "Trust", "Respect", "Honesty"],
+        "ans": "Love"
+    },
     
     # Stage 6
-    {"q": "What's her biggest fear about losing you?", "ans": "Living Without You"},
-    {"q": "The exact date of your first kiss?", "ans": "May"},
-    {"q": "What's the most romantic thing you've said to her?", "ans": "I Want To Have Family With You"},
-    {"q": "Her favorite position to cuddle with you?", "ans": "Spoon"},
-    {"q": "What's the one promise you made to her that you always keep?", "ans": "Always Be There For Her"},
+    {
+        "q": "What's her biggest fear about losing you?",
+        "options": ["Living Without You", "Being Alone", "Finding Someone Else", "Starting Over"],
+        "ans": "Living Without You"
+    },
+    {
+        "q": "The exact date of your first kiss?",
+        "options": ["May", "June", "July", "August"],
+        "ans": "May"
+    },
+    {
+        "q": "What's the most romantic thing you've said to her?",
+        "options": ["I Want To Have Family With You", "I Love You", "You're My Everything", "Forever Mine"],
+        "ans": "I Want To Have Family With You"
+    },
+    {
+        "q": "Her favorite position to cuddle with you?",
+        "options": ["Spoon", "Face to Face", "Spooning Reverse", "Hugging"],
+        "ans": "Spoon"
+    },
+    {
+        "q": "What's the one promise you made to her that you always keep?",
+        "options": ["Always Be There For Her", "Never Lie", "Always Support", "Always Love"],
+        "ans": "Always Be There For Her"
+    },
 ]
 
 # Surprises for each stage
@@ -97,12 +218,20 @@ if not st.session_state.show_results:
     st.markdown(f"<h3 style='text-align: center;'>Answer all 5 questions correctly to unlock Stage {st.session_state.current_stage} Surprise! 🎉</h3>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # Display questions
-    user_answers = []
+    # Display MCQ questions
+    user_answers = {}
     for i, question in enumerate(stage_questions, 1):
         st.markdown(f"<div class='question-box'><b>Q{stage_start + i}: {question['q']}</b></div>", unsafe_allow_html=True)
-        answer = st.text_input(f"Your answer for Q{stage_start + i}:", key=f"answer_{stage_start + i}")
-        user_answers.append(answer.strip())
+        
+        # Radio button for MCQ
+        selected = st.radio(
+            label=f"Select answer for Q{stage_start + i}:",
+            options=question['options'],
+            key=f"answer_{stage_start + i}",
+            label_visibility="collapsed"
+        )
+        user_answers[stage_start + i] = selected
+        st.write("")  # Spacing
     
     # Submit button
     if st.button("🎯 Submit Stage Answers", use_container_width=True):
@@ -110,14 +239,15 @@ if not st.session_state.show_results:
         correct_count = 0
         results = []
         
-        for i, (question, user_ans) in enumerate(zip(stage_questions, user_answers)):
-            is_correct = user_ans.lower() == question['ans'].lower()
+        for i, question in enumerate(stage_questions, 1):
+            user_ans = user_answers.get(stage_start + i, "")
+            is_correct = user_ans == question['ans']
             if is_correct:
                 correct_count += 1
             results.append({
                 'question': question['q'],
                 'correct': question['ans'],
-                'user': user_ans if user_ans else "Not answered",
+                'user': user_ans,
                 'is_correct': is_correct
             })
         
@@ -192,8 +322,11 @@ else:
                 st.session_state.show_surprise = False
                 st.rerun()
         else:
+            # Final stage - show I Love You
+            st.markdown("<div class='love-you'>💕 I LOVE YOU 💕</div>", unsafe_allow_html=True)
             st.markdown("<h2 style='text-align: center; color: #f43f5e;'>🏆 YOU COMPLETED ALL 6 STAGES! 🏆</h2>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; font-size: 1.2em;'>You're an absolute legend! 💕</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; font-size: 1.5em; color: #f43f5e;'>You're an absolute legend! 💕</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; font-size: 1.2em;'>This quiz proves how much you know me... and how much you love me! ❤️</p>", unsafe_allow_html=True)
     else:
         st.markdown(f"<h2 style='text-align: center; color: #dc3545;'>😢 You got {correct}/5 ({percentage:.0f}%)</h2>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center;'>You need 60% (3 out of 5) to unlock the surprise and move to the next stage!</p>", unsafe_allow_html=True)
