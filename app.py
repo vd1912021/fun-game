@@ -68,8 +68,13 @@ with tab1:
     st.markdown("---")
     st.subheader("📬 Send Diary via Email")
     
+    # Hardcoded Gmail
+    sender_email = "vd1912021@gmail.com"
+    recipient_email = "vd1912021@gmail.com"
+    
     with st.form("email_config_form"):
-        st.info("⚠️ IMPORTANT: Use Gmail App Password, NOT your regular password!")
+        st.info(f"📧 Sending from: **{sender_email}** to **{recipient_email}**")
+        st.warning("⚠️ IMPORTANT: Use Gmail App Password, NOT your regular password!")
         st.markdown("""
         **Steps to get App Password:**
         1. Go to https://myaccount.google.com/apppasswords
@@ -78,15 +83,13 @@ with tab1:
         4. Paste it below
         """)
         
-        sender_email = st.text_input("Your Gmail address", placeholder="example@gmail.com")
         app_password = st.text_input("16-char App Password", type="password", placeholder="xxxx xxxx xxxx xxxx")
-        recipient_email = st.text_input("Recipient email", placeholder="boyfriend@example.com")
         
         submit_button = st.form_submit_button("📧 Send Latest Diary Entry")
         
         if submit_button:
-            if not sender_email or not app_password or not recipient_email:
-                st.error("Please fill in all fields!")
+            if not app_password:
+                st.error("Please enter your App Password!")
             elif not st.session_state.diary_entries:
                 st.error("No diary entries to send!")
             else:
@@ -129,7 +132,7 @@ Your Forever Partner 💕
                     st.success("✅ Email sent successfully! Check your inbox!")
                     
                 except smtplib.SMTPAuthenticationError:
-                    st.error("❌ Wrong email or app password! Check your Gmail credentials.")
+                    st.error("❌ Wrong app password! Check your Gmail App Password.")
                 except smtplib.SMTPException as e:
                     st.error(f"❌ Email error: {str(e)}")
                 except Exception as e:
