@@ -1,5 +1,8 @@
 import streamlit as st
 from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Page config
 st.set_page_config(page_title="Our Love Story", page_icon="💕", layout="wide")
@@ -32,7 +35,7 @@ with tab1:
     with col2:
         who_writing = st.selectbox("Who is writing?", ["Me", "My Love", "Both"])
     
-    entry_text = st.text_area("Write your memory...", height=200)
+    entry_text = st.text_area("Write your memory...", height=200, key="diary_text")
     
     if st.button("📝 Save Entry", use_container_width=True):
         if entry_text.strip():
@@ -53,6 +56,84 @@ with tab1:
         for i, entry in enumerate(reversed(st.session_state.diary_entries)):
             with st.expander(f"📅 {entry['date']} - {entry['who']}"):
                 st.write(entry['text'])
+                
+                # Email button for each entry
+                col1, col2 = st.columns([3, 1])
+                with col2:
+                    if st.button(f"📧 Email", key=f"email_{i}"):
+                        st.session_state.selected_entry = entry
+                        st.session_state.show_email_form = True
+
+    # Email form
+    st.markdown("---")
+    st.subheader("📬 Send Diary via Email")
+    
+    with st.form("email_config_form"):
+        st.info("⚠️ IMPORTANT: Use Gmail App Password, NOT your regular password!")
+        st.markdown("""
+        **Steps to get App Password:**
+        1. Go to https://myaccount.google.com/apppasswords
+        2. Select Mail → Windows Device
+        3. Copy the 16-character password
+        4. Paste it below
+        """)
+        
+        sender_email = st.text_input("Your Gmail address", placeholder="example@gmail.com")
+        app_password = st.text_input("16-char App Password", type="password", placeholder="xxxx xxxx xxxx xxxx")
+        recipient_email = st.text_input("Recipient email", placeholder="boyfriend@example.com")
+        
+        submit_button = st.form_submit_button("📧 Send Latest Diary Entry")
+        
+        if submit_button:
+            if not sender_email or not app_password or not recipient_email:
+                st.error("Please fill in all fields!")
+            elif not st.session_state.diary_entries:
+                st.error("No diary entries to send!")
+            else:
+                try:
+                    latest_entry = st.session_state.diary_entries[-1]
+                    
+                    # Create email
+                    msg = MIMEMultipart()
+                    msg['From'] = sender_email
+                    msg['To'] = recipient_email
+                    msg['Subject'] = f"💕 Our Love Story - Diary Entry ({latest_entry['date']})"
+                    
+                    body = f"""
+Dear Love,
+
+I want to share this special memory with you:
+
+📅 Date: {latest_entry['date']}
+✍️ From: {latest_entry['who']}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{latest_entry['text']}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+With all my love,
+Your Forever Partner 💕
+                    """
+                    
+                    msg.attach(MIMEText(body, 'plain'))
+                    
+                    # Send via Gmail
+                    server = smtplib.SMTP('smtp.gmail.com', 587)
+                    server.starttls()
+                    server.login(sender_email, app_password)
+                    server.send_message(msg)
+                    server.quit()
+                    
+                    st.success("✅ Email sent successfully! Check your inbox!")
+                    
+                except smtplib.SMTPAuthenticationError:
+                    st.error("❌ Wrong email or app password! Check your Gmail credentials.")
+                except smtplib.SMTPException as e:
+                    st.error(f"❌ Email error: {str(e)}")
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
 
 # ==================== QUIZ TAB ====================
 with tab2:
@@ -172,6 +253,7 @@ with tab4:
     - 📔 Keep a shared diary
     - 🎯 Take fun quizzes about each other
     - 🎵 Build a couple's playlist
+    - 💌 Send diary entries via email
     
     Made with love 💕
     """)
