@@ -1,262 +1,208 @@
 import streamlit as st
 from datetime import datetime
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 # Page config
-st.set_page_config(page_title="Our Love Story", page_icon="💕", layout="wide")
+st.set_page_config(page_title="💕 Love Quiz Challenge", page_icon="💕", layout="wide")
 
-st.markdown("<h1 style='text-align: center; color: #f43f5e;'>💕 Our Love Story 💕</h1>", unsafe_allow_html=True)
-st.markdown("---")
+# Custom CSS
+st.markdown("""
+<style>
+    .stage-header { text-align: center; color: #f43f5e; font-size: 2em; margin: 1em 0; }
+    .question-box { background: #f0f2f6; padding: 1.5em; border-radius: 10px; margin: 1em 0; }
+    .correct { color: #28a745; font-weight: bold; }
+    .incorrect { color: #dc3545; font-weight: bold; }
+    .surprise-box { background: #fff3cd; padding: 2em; border-radius: 10px; text-align: center; margin: 2em 0; }
+    .celebration { text-align: center; font-size: 3em; margin: 1em 0; }
+</style>
+""", unsafe_allow_html=True)
 
 # Initialize session state
-if 'diary_entries' not in st.session_state:
-    st.session_state.diary_entries = []
+if 'current_stage' not in st.session_state:
+    st.session_state.current_stage = 1
+if 'stage_answers' not in st.session_state:
+    st.session_state.stage_answers = {}
+if 'show_results' not in st.session_state:
+    st.session_state.show_results = False
+if 'show_surprise' not in st.session_state:
+    st.session_state.show_surprise = False
 
-if 'quiz_scores' not in st.session_state:
-    st.session_state.quiz_scores = []
-
-if 'playlist' not in st.session_state:
-    st.session_state.playlist = []
-
-# Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📔 Diary", "🎯 Quiz", "🎵 Playlist", "⚙️ Settings"])
-
-# ==================== DIARY TAB ====================
-with tab1:
-    st.header("💝 Couple's Diary")
+# Quiz Questions (30 total - 5 per stage)
+questions = [
+    # Stage 1
+    {"q": "What's her go-to comfort food when she's sad?", "ans": "Chocolates"},
+    {"q": "Which movie/show has she watched the most times?", "ans": "Saiyara"},
+    {"q": "What does she do first thing in the morning?", "ans": "Morning Prayer"},
+    {"q": "Her most used emoji?", "ans": "Laughing"},
+    {"q": "What's her favorite way to spend time with family?", "ans": "Gossiping"},
     
-    col1, col2 = st.columns(2)
+    # Stage 2
+    {"q": "What's her dream job/career?", "ans": "Financial Analyst"},
+    {"q": "Which celebrity does she have a crush on?", "ans": "Abhishek Sharma"},
+    {"q": "What's her biggest insecurity?", "ans": "Weight"},
+    {"q": "What does she spend most time on her phone doing?", "ans": "Scrolling"},
+    {"q": "Her favorite thing about herself?", "ans": "Knowledge"},
     
-    with col1:
-        entry_date = st.date_input("Select date")
+    # Stage 3
+    {"q": "What was her childhood dream?", "ans": "Travel"},
+    {"q": "Her favorite memory with you?", "ans": "Noida"},
+    {"q": "What makes her cry (emotionally)?", "ans": "Subjective"},
+    {"q": "Her most embarrassing habit?", "ans": "Burp"},
+    {"q": "What's one thing she always nags you about?", "ans": "Cleanliness"},
     
-    with col2:
-        who_writing = st.selectbox("Who is writing?", ["Me", "My Love", "Both"])
+    # Stage 4
+    {"q": "What's the first thing she noticed about you?", "ans": "Nothing"},
+    {"q": "Her biggest relationship fear?", "ans": "Breakup"},
+    {"q": "What song reminds her of you?", "ans": "Sang Rahiyo"},
+    {"q": "Her secret talent nobody knows?", "ans": "Subjective"},
+    {"q": "What's her love language?", "ans": "Physical and Emotional"},
     
-    entry_text = st.text_area("Write your memory...", height=200, key="diary_text")
+    # Stage 5
+    {"q": "What did she say the first time she realized she loved you?", "ans": "Nothing"},
+    {"q": "Her biggest dream for your future together?", "ans": "House, Car, Travel and Money"},
+    {"q": "What's the sweetest thing you've done for her?", "ans": "Caring Me"},
+    {"q": "Her favorite nickname for you?", "ans": "V"},
+    {"q": "What does she value most in your relationship?", "ans": "Love"},
     
-    if st.button("📝 Save Entry", use_container_width=True):
-        if entry_text.strip():
-            entry = {
-                'date': str(entry_date),
-                'who': who_writing,
-                'text': entry_text,
-                'time': datetime.now().strftime("%H:%M:%S")
-            }
-            st.session_state.diary_entries.append(entry)
-            st.success("✅ Entry saved!")
-        else:
-            st.warning("Please write something!")
-    
-    # Display entries
-    if st.session_state.diary_entries:
-        st.subheader("📚 Past Memories")
-        for i, entry in enumerate(reversed(st.session_state.diary_entries)):
-            with st.expander(f"📅 {entry['date']} - {entry['who']}"):
-                st.write(entry['text'])
-                
-                # Email button for each entry
-                col1, col2 = st.columns([3, 1])
-                with col2:
-                    if st.button(f"📧 Email", key=f"email_{i}"):
-                        st.session_state.selected_entry = entry
-                        st.session_state.show_email_form = True
+    # Stage 6
+    {"q": "What's her biggest fear about losing you?", "ans": "Living Without You"},
+    {"q": "The exact date of your first kiss?", "ans": "May"},
+    {"q": "What's the most romantic thing you've said to her?", "ans": "I Want To Have Family With You"},
+    {"q": "Her favorite position to cuddle with you?", "ans": "Spoon"},
+    {"q": "What's the one promise you made to her that you always keep?", "ans": "Always Be There For Her"},
+]
 
-    # Email form
-    st.markdown("---")
-    st.subheader("📬 Send Diary via Email")
-    
-    # Hardcoded Gmail
-    sender_email = "vd1912021@gmail.com"
-    recipient_email = "vd1912021@gmail.com"
-    
-    with st.form("email_config_form"):
-        st.info(f"📧 Sending from: **{sender_email}** to **{recipient_email}**")
-        st.warning("⚠️ IMPORTANT: Use Gmail App Password, NOT your regular password!")
-        st.markdown("""
-        **Steps to get App Password:**
-        1. Go to https://myaccount.google.com/apppasswords
-        2. Select Mail → Windows Device
-        3. Copy the 16-character password
-        4. Paste it below
-        """)
-        
-        app_password = st.text_input("16-char App Password", type="password", placeholder="xxxx xxxx xxxx xxxx")
-        
-        submit_button = st.form_submit_button("📧 Send Latest Diary Entry")
-        
-        if submit_button:
-            if not app_password:
-                st.error("Please enter your App Password!")
-            elif not st.session_state.diary_entries:
-                st.error("No diary entries to send!")
-            else:
-                try:
-                    latest_entry = st.session_state.diary_entries[-1]
-                    
-                    # Create email
-                    msg = MIMEMultipart()
-                    msg['From'] = sender_email
-                    msg['To'] = recipient_email
-                    msg['Subject'] = f"💕 Our Love Story - Diary Entry ({latest_entry['date']})"
-                    
-                    body = f"""
-Dear Love,
+# Surprises for each stage
+surprises = {
+    1: "🎤 I'll sing a song for you",
+    2: "🎁 I'll buy you one thing you say",
+    3: "👑 I'll obey one thing you say",
+    4: "✨ I'll wear something special you've always wanted",
+    5: "✈️ I'll take you on a surprise trip",
+    6: "🌟 I'll do anything you want right now"
+}
 
-I want to share this special memory with you:
+# Header
+st.markdown("<h1 style='text-align: center; color: #f43f5e;'>💕 Love Quiz Challenge 💕</h1>", unsafe_allow_html=True)
+st.markdown("---")
 
-📅 Date: {latest_entry['date']}
-✍️ From: {latest_entry['who']}
+# Get current stage questions
+stage_start = (st.session_state.current_stage - 1) * 5
+stage_end = stage_start + 5
+stage_questions = questions[stage_start:stage_end]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Display stage header
+st.markdown(f"<div class='stage-header'>⭐ STAGE {st.session_state.current_stage} / 6</div>", unsafe_allow_html=True)
 
-{latest_entry['text']}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-With all my love,
-Your Forever Partner 💕
-                    """
-                    
-                    msg.attach(MIMEText(body, 'plain'))
-                    
-                    # Send via Gmail
-                    server = smtplib.SMTP('smtp.gmail.com', 587)
-                    server.starttls()
-                    server.login(sender_email, app_password)
-                    server.send_message(msg)
-                    server.quit()
-                    
-                    st.success("✅ Email sent successfully! Check your inbox!")
-                    
-                except smtplib.SMTPAuthenticationError:
-                    st.error("❌ Wrong app password! Check your Gmail App Password.")
-                except smtplib.SMTPException as e:
-                    st.error(f"❌ Email error: {str(e)}")
-                except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
-
-# ==================== QUIZ TAB ====================
-with tab2:
-    st.header("🎯 Love Quiz")
-    
-    quiz_type = st.selectbox("Choose quiz", ["About Him", "About Her", "About Us"])
-    
-    quizzes = {
-        "About Him": [
-            {"q": "Favorite food?", "opts": ["Pizza", "Sushi", "Burger", "Pasta"]},
-            {"q": "Dream vacation?", "opts": ["Beach", "Mountains", "City", "Countryside"]},
-            {"q": "Favorite color?", "opts": ["Blue", "Black", "Red", "Green"]},
-            {"q": "Favorite sport?", "opts": ["Football", "Basketball", "Cricket", "Tennis"]},
-            {"q": "Movie genre?", "opts": ["Action", "Comedy", "Romance", "Drama"]},
-        ],
-        "About Her": [
-            {"q": "Favorite food?", "opts": ["Pizza", "Sushi", "Burger", "Pasta"]},
-            {"q": "Dream vacation?", "opts": ["Beach", "Mountains", "City", "Countryside"]},
-            {"q": "Favorite color?", "opts": ["Blue", "Pink", "Red", "Green"]},
-            {"q": "Hobby?", "opts": ["Reading", "Painting", "Dancing", "Singing"]},
-            {"q": "Movie genre?", "opts": ["Action", "Comedy", "Romance", "Drama"]},
-        ],
-        "About Us": [
-            {"q": "Where did we meet?", "opts": ["School", "College", "Work", "Online"]},
-            {"q": "Our favorite activity?", "opts": ["Travel", "Movies", "Cooking", "Hiking"]},
-            {"q": "Our song?", "opts": ["Romantic", "Upbeat", "Slow", "Popular"]},
-            {"q": "When is anniversary?", "opts": ["January", "March", "July", "November"]},
-            {"q": "Favorite restaurant?", "opts": ["Italian", "Indian", "Chinese", "Thai"]},
-        ]
-    }
-    
+if not st.session_state.show_results:
+    st.markdown(f"<h3 style='text-align: center;'>Answer all 5 questions correctly to unlock Stage {st.session_state.current_stage} Surprise! 🎉</h3>", unsafe_allow_html=True)
     st.markdown("---")
     
-    answers = []
-    for i, item in enumerate(quizzes[quiz_type], 1):
-        st.write(f"**Q{i}: {item['q']}**")
-        ans = st.radio("Select", item['opts'], key=f"q_{quiz_type}_{i}")
-        answers.append(ans)
+    # Display questions
+    user_answers = []
+    for i, question in enumerate(stage_questions, 1):
+        st.markdown(f"<div class='question-box'><b>Q{stage_start + i}: {question['q']}</b></div>", unsafe_allow_html=True)
+        answer = st.text_input(f"Your answer for Q{stage_start + i}:", key=f"answer_{stage_start + i}")
+        user_answers.append(answer.strip())
     
-    if st.button("🎯 Submit Quiz", use_container_width=True):
-        score = len(answers)
-        result = {
-            'type': quiz_type,
-            'score': score,
-            'date': datetime.now().strftime("%Y-%m-%d")
+    # Submit button
+    if st.button("🎯 Submit Stage Answers", use_container_width=True):
+        # Calculate score
+        correct_count = 0
+        results = []
+        
+        for i, (question, user_ans) in enumerate(zip(stage_questions, user_answers)):
+            is_correct = user_ans.lower() == question['ans'].lower()
+            if is_correct:
+                correct_count += 1
+            results.append({
+                'question': question['q'],
+                'correct': question['ans'],
+                'user': user_ans if user_ans else "Not answered",
+                'is_correct': is_correct
+            })
+        
+        # Store results
+        st.session_state.stage_answers[st.session_state.current_stage] = {
+            'correct': correct_count,
+            'total': 5,
+            'results': results
         }
-        st.session_state.quiz_scores.append(result)
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Score", f"{score}/{len(answers)}")
-        with col2:
-            st.metric("Percentage", f"{(score/len(answers))*100:.0f}%")
-        with col3:
-            st.metric("Quiz", quiz_type)
+        st.session_state.show_results = True
+        st.rerun()
 
-# ==================== PLAYLIST TAB ====================
-with tab3:
-    st.header("🎵 Our Playlist")
+else:
+    # Show results
+    stage_data = st.session_state.stage_answers[st.session_state.current_stage]
+    correct = stage_data['correct']
+    total = stage_data['total']
+    percentage = (correct / total) * 100
     
-    col1, col2 = st.columns([3, 1])
+    st.markdown("---")
+    st.markdown("<h2 style='text-align: center;'>📊 Stage Results</h2>", unsafe_allow_html=True)
     
+    # Score display
+    col1, col2, col3 = st.columns(3)
     with col1:
-        song = st.text_input("Song name (Artist - Song)")
-    
+        st.metric("Score", f"{correct}/{total}")
     with col2:
-        if st.button("➕ Add"):
-            if song.strip():
-                st.session_state.playlist.append({
-                    'name': song,
-                    'date': datetime.now().strftime("%Y-%m-%d")
-                })
-                st.success("Added!")
+        st.metric("Percentage", f"{percentage:.0f}%")
+    with col3:
+        if percentage >= 60:
+            st.metric("Status", "✅ PASSED")
+        else:
+            st.metric("Status", "❌ FAILED")
+    
+    st.markdown("---")
+    
+    # Show each answer
+    st.markdown("<h3>Answer Review:</h3>", unsafe_allow_html=True)
+    for i, result in enumerate(stage_data['results'], 1):
+        with st.expander(f"Q{stage_start + i}: {result['question']}"):
+            st.write(f"**Correct Answer:** {result['correct']}")
+            st.write(f"**Your Answer:** {result['user']}")
+            if result['is_correct']:
+                st.markdown("<p class='correct'>✅ Correct!</p>", unsafe_allow_html=True)
             else:
-                st.warning("Enter song!")
+                st.markdown("<p class='incorrect'>❌ Incorrect</p>", unsafe_allow_html=True)
     
     st.markdown("---")
     
-    if st.session_state.playlist:
-        st.subheader(f"🎶 Songs ({len(st.session_state.playlist)})")
-        for i, s in enumerate(st.session_state.playlist, 1):
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                st.write(f"{i}. {s['name']}")
-            with col2:
-                if st.button("❌", key=f"del_{i}"):
-                    st.session_state.playlist.pop(i-1)
-                    st.rerun()
+    # Surprise unlock
+    if percentage >= 60:
+        st.markdown(f"<div class='celebration'>🎉 🎉 🎉</div>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center; color: #28a745;'>🎊 YOU PASSED STAGE {st.session_state.current_stage}! 🎊</h2>", unsafe_allow_html=True)
+        st.markdown(f"<div class='celebration'>✨ ✨ ✨</div>", unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        if not st.session_state.show_surprise:
+            if st.button(f"🎁 Tap to Reveal Your Surprise!", use_container_width=True, key="reveal_surprise"):
+                st.session_state.show_surprise = True
+                st.rerun()
+        else:
+            st.markdown(f"<div class='surprise-box'><h1>{surprises[st.session_state.current_stage]}</h1></div>", unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Next stage button
+        if st.session_state.current_stage < 6:
+            if st.button(f"➡️ Go to Stage {st.session_state.current_stage + 1}", use_container_width=True):
+                st.session_state.current_stage += 1
+                st.session_state.show_results = False
+                st.session_state.show_surprise = False
+                st.rerun()
+        else:
+            st.markdown("<h2 style='text-align: center; color: #f43f5e;'>🏆 YOU COMPLETED ALL 6 STAGES! 🏆</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; font-size: 1.2em;'>You're an absolute legend! 💕</p>", unsafe_allow_html=True)
     else:
-        st.info("No songs yet! Add your favorites 🎵")
+        st.markdown(f"<h2 style='text-align: center; color: #dc3545;'>😢 You got {correct}/5 ({percentage:.0f}%)</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'>You need 60% (3 out of 5) to unlock the surprise and move to the next stage!</p>", unsafe_allow_html=True)
+        st.markdown("---")
+        
+        if st.button(f"🔄 Retry Stage {st.session_state.current_stage}", use_container_width=True):
+            st.session_state.show_results = False
+            st.session_state.show_surprise = False
+            st.rerun()
 
-# ==================== SETTINGS TAB ====================
-with tab4:
-    st.header("⚙️ Settings")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📊 Stats")
-        st.metric("Diary Entries", len(st.session_state.diary_entries))
-        st.metric("Quizzes", len(st.session_state.quiz_scores))
-        st.metric("Playlist Songs", len(st.session_state.playlist))
-    
-    with col2:
-        st.subheader("Data")
-        if st.button("🗑️ Clear All"):
-            st.session_state.diary_entries = []
-            st.session_state.quiz_scores = []
-            st.session_state.playlist = []
-            st.success("Cleared!")
-    
-    st.markdown("---")
-    st.markdown("""
-    **Our Love Story App**
-    
-    A beautiful app for couples to:
-    - 📔 Keep a shared diary
-    - 🎯 Take fun quizzes about each other
-    - 🎵 Build a couple's playlist
-    - 💌 Send diary entries via email
-    
-    Made with love 💕
-    """)
+st.markdown("---")
+st.markdown("<p style='text-align: center; color: #999;'>Made with love 💕</p>", unsafe_allow_html=True)
